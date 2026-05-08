@@ -1,85 +1,178 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html>
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laravel Comments</title>
+    <title>Comments Wall</title>
     <script src="https://cdn.tailwindcss.com"></script>
+
     <style>
-        /* Custom scrollbar for comment section */
-        .comments-scroll::-webkit-scrollbar {
-            width: 6px;
+        body {
+            background: radial-gradient(circle at top, #0f172a, #020617);
+            font-family: ui-sans-serif, system-ui;
         }
 
-        .comments-scroll::-webkit-scrollbar-thumb {
-            background-color: #9ca3af;
-            border-radius: 3px;
+        .card {
+            break-inside: avoid;
+            margin-bottom: 18px;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-6px) scale(1.01);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            background: linear-gradient(90deg, #60a5fa, #34d399, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        html {
+            scroll-behavior: smooth;
         }
     </style>
 </head>
 
-<body class="bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100 font-sans">
+<body class="text-white min-h-screen">
 
-    <div class="max-w-4xl mx-auto p-6">
+<div class="max-w-6xl mx-auto p-6">
 
-        <!-- Page Header -->
-        <header class="mb-8 text-center">
-            <h1 class="text-3xl md:text-4xl font-extrabold text-blue-700 dark:text-blue-500">Comments & Discussions</h1>
-            <p class="mt-2 text-gray-500 dark:text-gray-400">Share your thoughts and reply to others.</p>
-        </header>
+    <!-- HEADER -->
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold">🧱 Comments Wall</h1>
+        <p class="text-gray-400">Pinterest-style masonry layout</p>
+    </div>
 
-        <!-- Success Message -->
-        @if(session('success'))
-        <div class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 p-4 rounded-md mb-6 shadow-md">
+    <!-- SUCCESS ALERT -->
+    @if(session('success'))
+        <div class="bg-green-600 p-3 rounded mb-5">
             {{ session('success') }}
         </div>
-        @endif
+    @endif
 
-        <!-- Comment Form -->
-        <section class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 mb-8">
-            <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Post a Comment</h2>
-            <form action="{{ route('comment.store') }}" method="POST" class="space-y-4">
-                @csrf
-                <input type="text" name="name" placeholder="Your Name" class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                <textarea name="comment" placeholder="Write your comment..." rows="4" class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
-                <input type="hidden" name="parent_id" value="">
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition duration-200">Post Comment</button>
-            </form>
-        </section>
+    <!-- SEARCH -->
+    <form method="GET" class="flex gap-2 mb-6">
+        <input type="text"
+               name="search"
+               value="{{ $search ?? '' }}"
+               placeholder="Search comments..."
+               class="w-full p-3 rounded bg-gray-800 border border-gray-700">
 
-        <!-- Comments List -->
-        <section class="comments-scroll space-y-6 max-h-[70vh] overflow-y-auto">
-            @foreach($comments as $comment)
-            <div class="bg-gray-50 dark:bg-gray-800 shadow-sm rounded-lg p-5 space-y-3 border border-gray-200 dark:border-gray-700">
-                <!-- Comment Content -->
-                <div>
-                    <p class="font-semibold text-gray-800 dark:text-gray-100">{{ $comment->name }}</p>
-                    <p class="text-gray-700 dark:text-gray-300">{{ $comment->comment }}</p>
+        <button class="bg-blue-600 px-5 rounded hover:bg-blue-700">
+            Search
+        </button>
+    </form>
+
+    <!-- COMMENT FORM -->
+    <form action="{{ route('comment.store') }}" method="POST"
+          class="bg-gray-900 p-5 rounded-xl mb-8 border border-gray-700">
+        @csrf
+
+        <input type="text"
+               name="name"
+               placeholder="Your Name"
+               class="w-full p-3 mb-3 bg-gray-800 rounded text-white">
+
+        <textarea name="comment"
+                  placeholder="Write something..."
+                  class="w-full p-3 mb-3 bg-gray-800 rounded text-white"></textarea>
+
+        <input type="hidden" name="parent_id">
+
+        <button class="bg-green-500 px-5 py-2 rounded hover:bg-green-600">
+            Post
+        </button>
+    </form>
+
+    <!-- MASONRY GRID -->
+    <div class="columns-1 md:columns-2 lg:columns-3 gap-5">
+
+        @foreach($comments as $comment)
+
+            <div class="card bg-gray-900 p-4 rounded-xl shadow-lg border border-gray-700">
+
+                <!-- MAIN COMMENT -->
+                <div class="flex justify-between">
+
+                    <div>
+                        <h3 class="font-bold text-blue-400">
+                            {{ $comment->name }}
+                        </h3>
+
+                        <p class="text-gray-300 mt-2">
+                            {{ $comment->comment }}
+                        </p>
+                    </div>
+
+                    <!-- DELETE MAIN COMMENT (FIXED) -->
+                    <form action="{{ route('comment.delete', $comment->id) }}"
+                          method="POST"
+                          onsubmit="return confirm('⚠️ Delete this comment?')">
+                        @csrf
+                        @method('DELETE')
+
+                        <button type="submit" class="text-red-400 hover:text-red-600">
+                            ✕
+                        </button>
+                    </form>
+
                 </div>
 
-                <!-- Reply Form -->
-                <form action="{{ route('comment.store') }}" method="POST" class="mt-3 space-y-2 bg-gray-100 dark:bg-gray-900 p-3 rounded-lg">
-                    @csrf
-                    <input type="text" name="name" placeholder="Your Name" class="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-1 focus:ring-blue-500 focus:outline-none">
-                    <input type="text" name="comment" placeholder="Reply..." class="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-1 focus:ring-blue-500 focus:outline-none">
-                    <input type="hidden" name="parent_id" value="{{ $comment->id }}">
-                    <button type="submit" class="bg-gray-700 hover:bg-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 text-white px-4 py-2 rounded-md text-sm transition duration-200">Reply</button>
-                </form>
+                <!-- REPLIES -->
+                <div class="mt-4 space-y-3">
 
-                <!-- Nested Replies -->
-                @foreach($comment->replies as $reply)
-                <div class="ml-8 mt-4 bg-gray-100 dark:bg-gray-900 rounded-lg p-4 border-l-4 border-blue-500">
-                    <p class="font-semibold text-gray-800 dark:text-gray-100">{{ $reply->name }}</p>
-                    <p class="text-gray-700 dark:text-gray-300">{{ $reply->comment }}</p>
+                    @foreach($comment->replies as $reply)
+
+                        <div class="bg-gray-800 p-3 rounded-lg">
+
+                            <div class="flex justify-between">
+
+                                <div>
+                                    <p class="text-green-400 font-semibold text-sm">
+                                        {{ $reply->name }}
+                                    </p>
+
+                                    <p class="text-gray-200 text-sm">
+                                        {{ $reply->comment }}
+                                    </p>
+                                </div>
+
+                                <!-- DELETE REPLY (FIXED) -->
+                                <form action="{{ route('comment.delete', $reply->id) }}"
+                                      method="POST"
+                                      onsubmit="return confirm('⚠️ Delete this reply?')">
+                                    @csrf
+                                    @method('DELETE')
+
+                                    <button type="submit" class="text-red-300 text-xs">
+                                        ✕
+                                    </button>
+                                </form>
+
+                            </div>
+
+                        </div>
+
+                    @endforeach
+
                 </div>
-                @endforeach
+
             </div>
-            @endforeach
-        </section>
+
+        @endforeach
 
     </div>
 
-</body>
+    <!-- PAGINATION -->
+    <div class="mt-8 flex justify-center">
+        <div class="bg-gray-800 p-3 rounded">
+            {{ $comments->links() }}
+        </div>
+    </div>
 
+</div>
+
+</body>
 </html>
