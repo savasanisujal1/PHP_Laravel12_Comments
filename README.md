@@ -417,5 +417,6 @@ Your PHP_Laravel12_Comments Project is now ready!
 
 <<<<<<< HEAD
 
+
 =======
 >>>>>>> development
